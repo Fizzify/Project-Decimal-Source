@@ -1,0 +1,142 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven {
+            name = "forge"
+            url = "https://files.minecraftforge.net/maven"
+        }
+        maven {
+            name = 'sponge'
+            url = 'https://repo.spongepowered.org/maven'
+        }
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        maven {
+            url 'https://jitpack.io'
+        }
+
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.1-SNAPSHOT'
+        classpath 'org.spongepowered:mixingradle:0.6-SNAPSHOT'
+    }
+}
+
+configurations {
+    embed
+    compile.extendsFrom(embed)
+}
+
+def tweaker = "me.fizzify.projectdecimal.launch.ProjectDecimalTweaker"
+def json = "mixins.projectdecimal.json"
+def refmap = "mixins.projectdecimal.refmap.json"
+
+apply plugin: 'net.minecraftforge.gradle.tweaker-client'
+apply plugin: 'org.spongepowered.mixin'
+apply plugin: 'java'
+
+
+sourceCompatibility = targetCompatibility = 1.8
+compileJava.options.encoding = 'UTF-8'
+
+version = "0.1-BETA"
+group = "riverclient"
+archivesBaseName = "Project Decimal"
+
+minecraft {
+    version = "1.8.9"
+    tweakClass = tweaker
+    mappings = "stable_22"
+    runDir = 'run'
+    clientJvmArgs = ["-XX:-DisableExplicitGC"]
+    makeObfSourceJar = false
+}
+
+dependencies {
+
+    embed('org.spongepowered:mixin:0.7.11-SNAPSHOT') {
+        exclude module: 'launchwrapper'
+        exclude module: 'guava'
+        exclude module: 'gson'
+        exclude module: 'commons-io'
+    }
+    embed 'com.github.jagrosh:DiscordIPC:e29d6d8'
+    embed 'com.github.FalseHonesty:reflections:855f40b80b'
+    embed ('org.slick2d:slick2d-core:1.0.2') {
+        exclude module: 'lwjgl'
+    }
+
+    embed 'org.ow2.asm:asm:5.0.3'
+    annotationProcessor 'com.google.guava:guava:21.0'
+    annotationProcessor 'org.apache.logging.log4j:log4j-core:2.0-beta9'
+    annotationProcessor 'org.ow2.asm:asm-tree:6.2'
+    annotationProcessor 'org.ow2.asm:asm-commons:6.2'
+    annotationProcessor 'org.ow2.asm:asm-util:6.2'
+    annotationProcessor 'com.google.code.gson:gson:2.2.4'
+    annotationProcessor 'org.spongepowered:mixin:0.7.11-SNAPSHOT'
+
+    compileOnly 'org.projectlombok:lombok:1.18.20'
+    annotationProcessor 'org.projectlombok:lombok:1.18.20'
+
+    testCompileOnly 'org.projectlombok:lombok:1.18.20'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.20'
+
+
+    embed fileTree(dir: 'libs', include: '*.jar')
+}
+
+mixin {
+    defaultObfuscationEnv notch
+    add sourceSets.main, refmap
+}
+
+repositories {
+    maven { url "https://jitpack.io" }
+    maven {
+        name = 'sponge'
+        url = 'https://repo.spongepowered.org/maven/'
+    }
+    mavenCentral()
+    jcenter()
+}
+
+processResources {
+    inputs.files "src/main/resources"
+    outputs.dir "build/classes/main"
+    copy {
+        from("src/main/resources")
+        into("build/classes/main")
+    }
+}
+
+jar {
+    dependsOn configurations.compile
+    from {
+        configurations.embed.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
+}
+
+jar {
+    manifest.attributes(
+            "MixinConfigs": json,
+            "TweakClass": tweaker,
+            "TweakOrder": 0,
+            "Manifest-Version": 1.0
+    )
+
+    configurations.embed.each { dep ->
+        from(project.zipTree(dep)) {
+            exclude 'META-INF', 'META-INF/**'
+            exclude 'org/jetbrains/annotations', 'org/jetbrains/annotations/**'
+        }
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.10.3'
+}

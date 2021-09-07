@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "compatibilityLevel": "JAVA_8",
+  "package": "me.fizzify.projectdecimal.mixin",
+  "refmap": "mixins.projectdecimal.refmap.json",
+  "verbose": true,
+  "mixins": [
+    "client.MixinMinecraft",
+    "client.gui.MixinGuiIngame",
+    "client.settings.MixinGameSettings"
+  ]
+}
